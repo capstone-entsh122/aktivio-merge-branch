@@ -1,0 +1,1 @@
+module.exports = { mockUserId: 'testUserId', mockCommunityId: 'testCommunityId'}
