@@ -26,7 +26,7 @@ describe('ReplyPostModel', () => {
   // Test getReplyPostById
   describe('getReplyPostById', () => {
     it('should return the reply post with the specified ID', async () => {
-      const replyPostId = 'KSuLZh2W31DfgGcw7A6j';
+      const replyPostId = '1XAlwEo3ZFTz9ryHXWDV';
       const replyPosts = await ReplyPostModel.getReplyPostById(replyPostId);
       expect(replyPosts).not.toBeNull();
       expect(replyPosts).toHaveProperty('id', replyPostId);
