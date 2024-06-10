@@ -1,4 +1,4 @@
-const admin = require('../config/firebaseAdmin');
+const {admin }= require('../config/firebaseAdmin.js');
 
 /**
  * Middleware to authenticate users using Firebase ID tokens.
@@ -12,7 +12,7 @@ const admin = require('../config/firebaseAdmin');
 const authenticate = async (req, res, next) => {
     if (process.env.NODE_ENV === 'test') {
         // Skip authentication during tests and assign a mock user ID
-        req.user = { uid: 'mockUserId' };
+        req.user = { uid: '5fGSZQPaH3W8uaefTTUG4j9RCZB3' };
         return next();
       }
       
@@ -21,6 +21,8 @@ const authenticate = async (req, res, next) => {
     if (!idToken) {
         return res.status(401).send('Unauthorized');
     }
+
+    console.log('ID Token:', idToken);
 
     try {
         // Verify the ID token

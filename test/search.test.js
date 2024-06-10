@@ -3,7 +3,6 @@
 // const app = require('../app'); // Adjust the path to your Express app
 // const UserModel = require('../models/user.model');
 // const algoliaIndex = require('../config/algoliaConfig');
-// const { firestore, GeoPoint } = require('../config/firebaseAdmin');
 
 // // Mock the authenticate middleware
 // jest.mock('../middlewares/authenticate', () => (req, res, next) => {
@@ -24,33 +23,11 @@
 //   });
 
 //   beforeEach(async () => {
-//     const userRef = firestore.collection('users').doc('mockUserId');
-//     const userDoc = await userRef.get();
-
-//     if (!userDoc.exists) {
-//       console.log('Creating new user document for mockUserId');
-//       await userRef.set({
-//         displayName: 'Test User',
-//         email: 'test@example.com',
-//         location: new GeoPoint(0, 0), // Initialize with a default location
-//         age: 25,
-//         gender: 'male',
-//         equipment: 'none',
-//         joinedCommunities: [],
-//       });
-//     } else {
-//       console.log('User document already exists for mockUserId');
-//     }
-
-//     console.log('Updating location for mockUserId');
+//     // Ensure the user has a location set
 //     await UserModel.saveLocation('mockUserId', { latitude: 89.7758, longitude: 120.4193 });
-
-//     // Verify the location was set correctly
-//     const updatedUserDoc = await userRef.get();
-//     console.log('Updated user document:', updatedUserDoc.data());
 //   });
 
-//   it.only('should return search results with geolocation', async () => {
+//   it('should return search results with geolocation', async () => {
 //     const response = await request(app)
 //       .get('/api/search')
 //       .query({ q: 'Test', radius: '5000' });
@@ -59,6 +36,7 @@
 //       message: 'Success',
 //       data: expect.any(Array),
 //     }));
+//     console.log(response.body.data);
 //   });
 
 //   it('should return 400 if user location not found', async () => {
@@ -106,6 +84,7 @@
 //     expect(response.status).toBe(500);
 //     expect(response.body).toEqual(expect.objectContaining({
 //       message: 'Unexpected search result format',
+//       data: null,
 //     }));
 
 //     // Restore the original search function

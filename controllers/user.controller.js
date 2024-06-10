@@ -198,7 +198,7 @@ const updateUserPreference = async (req, res) => {
 
     try {
         const user = await UserModel.updateUserPreference(userId, {gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory });
-        const recommendations = await getRecommendations({ gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory });
+        // const recommendations = await getRecommendations({ gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory });
         res.status(200).json(formatResponse('Success', null, user));
     } catch (error) {
         console.error('Error updating preference:', error);

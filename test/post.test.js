@@ -7,11 +7,7 @@
 // const formatResponse = require('../helpers/responseFormatter');
 // const path = require('path');
 
-
-// jest.mock('../middlewares/authenticate', () => (req, res, next) => {
-//   req.user = { uid: 'mockUserId' }; // Mock authenticated user
-//   next();
-// });
+// ;
 
 // describe('Post API', () => {
 //   let server;
