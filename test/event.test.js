@@ -25,7 +25,7 @@ describe('Event Controller', () => {
       communityId = communityRef.id;
     
       // Set the mock user ID
-      userId = 'mockUserId';
+      userId = 'CRhmBcxRaPXZxZKIPrYqMlwFag13';
     
       // Add the mock user to the community's members array
       await communityRef.update({
