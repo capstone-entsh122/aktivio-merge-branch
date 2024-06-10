@@ -3,11 +3,10 @@ const request = require('supertest');
 const app = require('../app'); // Adjust the path to your Express app
 const UserModel = require('../models/user.model');
 const algoliaIndex = require('../config/algoliaConfig');
-const { firestore, GeoPoint } = require('../config/firebaseAdmin');
 
 // Mock the authenticate middleware
 jest.mock('../middlewares/authenticate', () => (req, res, next) => {
-  req.user = { uid: 'mockUserId' }; // Mock authenticated user
+  req.user = { uid: 'zVhJr9EYmkUdOv4A35ZX5VD81bq2' }; // Mock authenticated user
   next();
 });
 
@@ -24,33 +23,11 @@ describe('Search API with Geolocation', () => {
   });
 
   beforeEach(async () => {
-    const userRef = firestore.collection('users').doc('mockUserId');
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      console.log('Creating new user document for mockUserId');
-      await userRef.set({
-        displayName: 'Test User',
-        email: 'test@example.com',
-        location: new GeoPoint(0, 0), // Initialize with a default location
-        age: 25,
-        gender: 'male',
-        equipment: 'none',
-        joinedCommunities: [],
-      });
-    } else {
-      console.log('User document already exists for mockUserId');
-    }
-
-    console.log('Updating location for mockUserId');
-    await UserModel.saveLocation('mockUserId', { latitude: 89.7758, longitude: 120.4193 });
-
-    // Verify the location was set correctly
-    const updatedUserDoc = await userRef.get();
-    console.log('Updated user document:', updatedUserDoc.data());
+    // Ensure the user has a location set
+    await UserModel.saveLocation('zVhJr9EYmkUdOv4A35ZX5VD81bq2', { latitude: 89.7758, longitude: 120.4193 });
   });
 
-  it.only('should return search results with geolocation', async () => {
+  it('should return search results with geolocation', async () => {
     const response = await request(app)
       .get('/api/search')
       .query({ q: 'Test', radius: '5000' });
@@ -59,6 +36,7 @@ describe('Search API with Geolocation', () => {
       message: 'Success',
       data: expect.any(Array),
     }));
+    console.log(response.body.data);
   });
 
   it('should return 400 if user location not found', async () => {
@@ -106,6 +84,7 @@ describe('Search API with Geolocation', () => {
     expect(response.status).toBe(500);
     expect(response.body).toEqual(expect.objectContaining({
       message: 'Unexpected search result format',
+      data: null,
     }));
 
     // Restore the original search function
