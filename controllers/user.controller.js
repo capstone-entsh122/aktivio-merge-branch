@@ -7,7 +7,6 @@ const { bucket } = require('../config/gcsClient.js');
 const uploadFile = require('../helpers/uploadFile.js');
 const path = require('path');
 const formatResponse = require('../helpers/responseFormatter.js');
-const {registerUser, loginUser, generateCustomToken} = require('../services/auth.service.js');
 
 // const { v4: uuidv4 } = require('uuid');
 
@@ -26,39 +25,19 @@ const getRecommendations = require('../helpers/getRecommendation');
  * @async
  */
 const userSignup = async (req, res) => {
-    const { email, password, displayName } = req.body;
+    const { email, displayName, userId } = req.body;
 
     try {
-        // Create the user in Firebase Authentication
-        const userRecord = await registerUser(email, password);
-        const userId = userRecord.uid;
-
         // Create the user in your database
         const user = await UserModel.createUser(userId, { email, displayName });
 
-        // Generate a custom token for the newly registered user
-        const token = await generateCustomToken(userId);
-
-        res.status(200).json(formatResponse('Success', null, { user, token }));
+        res.status(200).json(formatResponse('Success', null, user));
     } catch (error) {
         console.error('Error during user signup:', error);
         res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
 };
 
-const userLogin = async (req, res) => {
-    const { email, password } = req.body;
-
-  try {
-    const user = await loginUser(email, password);
-    const token = await generateCustomToken(user.uid);
-    res.status(200).json(formatResponse('Success', null, { user, token }));
-  } catch (error) {
-    console.error('Error during login:', error);
-    res.status(401).json(formatResponse('Unauthorized', error.message));
-  }
-
-}
 
 /**
  * @function getUserDetails
@@ -104,16 +83,26 @@ const updateUserDetails = async (req, res) => {
         const userId = req.user.uid;
         const updateData = req.body;
 
-        // await firestore.runTransaction(async (transaction) => {
-            const user = await UserModel.updateUserById(userId, updateData);
+        // Check if location object exists in updateData
+        if ('location' in updateData) {
+            const { location, ...restData } = updateData;
 
-            // if (updateData.displayName) {
-            //     await PostModel.updateAuthorName(userId, updateData.displayName, transaction);
-            //     await EventModel.updateCreatorName(userId, updateData.displayName, transaction);
-            // }
-        // });
+            // Update user details
+            await UserModel.updateUserById(userId, restData);
 
-        res.status(200).json(formatResponse('Success', null, user));
+            // Update location if latitude and longitude are provided
+            if (location.latitude != null && location.longitude != null) {
+                await UserModel.updateUserLocation(userId, location);
+            }
+        } else {
+            // Update user details without location
+            await UserModel.updateUserById(userId, updateData);
+        }
+
+        // Fetch the updated user data
+        const updatedUser = await UserModel.getUserById(userId);
+
+        res.status(200).json(formatResponse('Success', null, updatedUser));
     } catch (error) {
         console.error('Error updating user details:', error);
         res.status(500).json(formatResponse('Internal Server Error', error.message));
@@ -390,27 +379,9 @@ const listJoinedCommunities = async (req, res) => {
     }
 };
 
-const saveLocation = async (req, res) => {
-    try {
-      const userId = req.user.uid;
-      const { latitude, longitude } = req.body;
-  
-      if (latitude == null || longitude == null) {
-        return res.status(400).json(formatResponse('Bad Request: Missing latitude or longitude'));
-      }
-  
-      const user = await UserModel.saveLocation(userId, { latitude, longitude });
-      res.status(200).json(formatResponse('Location saved successfully', null, user));
-    } catch (error) {
-      res.status(500).json(formatResponse('Internal Server Error', error.message));
-    }
-  };
-
-
 
 module.exports = { 
     userSignup,
-    userLogin,
      getUserDetails,
       updateUserDetails,
        deleteUserAccount,
@@ -419,5 +390,5 @@ module.exports = {
           uploadProfilePhoto,
            joinCommunity,
             leaveCommunity,
-             listJoinedCommunities,
-            saveLocation};
+             listJoinedCommunities
+           };

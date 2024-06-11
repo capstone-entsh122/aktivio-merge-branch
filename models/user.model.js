@@ -155,7 +155,7 @@ static async leaveCommunity(userId, communityId, transaction = null) {
     return [];
   }
 
-  static async saveLocation(userId, { latitude, longitude }) {
+  static async updateUserLocation(userId, { latitude, longitude }) {
     const userRef = firestore.collection('users').doc(userId);
     await userRef.update({ location: new GeoPoint(latitude, longitude) });
     const userDoc = await userRef.get();
