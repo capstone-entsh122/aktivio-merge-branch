@@ -13,5 +13,5 @@ To. </a>
 
 ---
 <p align="center">
-    <a href="https://github.com/capstone-entsh122"> © ENTS-H122 | Back-End Aktivio </a>
+    <a href="https://github.com/capstone-entsh122"> © ENTS-H122 | Aktivio </a>
 </p>
