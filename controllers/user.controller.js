@@ -12,7 +12,7 @@ const SportPlanModel = require('../models/sportplan.model');
 
 const admin = require('firebase-admin');
 const { getRecommendations } = require('../helpers/getRecommendation.js');
-const hitungSemuaNutrisi = require('../helpers/nutritionCalculator.js')
+const hitungSemuaNutrisi = require('../helpers/nutritionCalculator.js');
 
 
 
@@ -462,6 +462,18 @@ const listJoinedCommunities = async (req, res) => {
     }
 };
 
+const getMealHistory = async (req, res) => {
+  const userId = req.user.uid; // Assuming you have authentication middleware
+
+  try {
+    const mealHistory = await UserModel.getMealHistory(userId);
+    res.status(200).json(formatResponse('Meal history retrieved successfully', null, mealHistory));
+  } catch (error) {
+    console.error('Error fetching meal history:', error);
+    res.status(500).json(formatResponse('Internal Server Error', error.message));
+  }
+};
+
 
 module.exports = { 
   updateFcmTokenController,
@@ -475,5 +487,6 @@ module.exports = {
            joinCommunity,
             leaveCommunity,
              listJoinedCommunities,
-             createSportPlan: createSportPlanController, 
+             createSportPlan: createSportPlanController,
+              getMealHistory 
            };

@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const authenticate = require('../middlewares/authenticate');
-
-
 const { 
   updateFcmTokenController,
   userSignup, 
@@ -15,6 +13,7 @@ const {
   joinCommunity,
   leaveCommunity,
   listJoinedCommunities,
+  getMealHistory
  } = require('../controllers/user.controller.js');
 const upload = require('../middlewares/upload.js'); // Multer middleware for handling file uploads
 
@@ -43,6 +42,8 @@ router.delete('/memberships/:communityId', authenticate, leaveCommunity);
 
 // List communities joined by the user
 router.get('/memberships', authenticate, listJoinedCommunities);
+
+router.get('/meal-history', authenticate, getMealHistory);
 
 router.post('/update-token', updateFcmTokenController);
 

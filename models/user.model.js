@@ -1,4 +1,5 @@
 const { firestore, FieldValue, GeoPoint } = require('../config/firebaseAdmin');
+const { bucket } = require('../config/gcsClient.js');
 
 
 /**
@@ -227,6 +228,48 @@ static async leaveCommunity(userId, communityId, transaction = null) {
     });
 
     await batch.commit();
+  }
+
+  static async addFoodEntry(userId, foodEntry) {
+    try {
+      const userRef = firestore.collection('users').doc(userId);
+      await userRef.update({
+        foodEntries: FieldValue.arrayUnion(foodEntry)
+      });
+    } catch (error) {
+      throw new Error(`Error adding food entry: ${error.message}`);
+    }
+  }
+
+  static async getMealHistory(userId) {
+    try {
+      const userRef = firestore.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        throw new Error('User not found');
+      }
+
+      let foodEntries = userDoc.get('foodEntries') || [];
+
+      // Generate signed URLs for all food entries
+      foodEntries = await Promise.all(foodEntries.map(async (entry) => {
+        if (entry.imagePath) {
+          const options = {
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + 1000 * 60 * 15, // 15 minutes
+          };
+          const [url] = await bucket.file(entry.imagePath).getSignedUrl(options);
+          return { ...entry, imageUrl: url };
+        }
+        return entry;
+      }));
+
+      return foodEntries;
+    } catch (error) {
+      throw new Error(`Error fetching meal history: ${error.message}`);
+    }
   }
 
 }

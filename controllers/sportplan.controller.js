@@ -1,6 +1,7 @@
 const { getRecommendations } = require('../helpers/getRecommendation');
 const { firestore } = require('../config/firebaseAdmin');
 const formatResponse = require('../helpers/responseFormatter.js');
+const SportPlanModel = require('../models/sportplan.model.js');
 
 const getRecommendationsController = async (req, res) => {
   const { preferences, userId } = req.body;
@@ -18,6 +19,35 @@ const getRecommendationsController = async (req, res) => {
   }
 };
 
+const setFinishedSportPlanController = async (req, res) => {
+  const {  planId, isCompleted = true } = req.body;
+  const userId = req.user.uid;
+
+  try {
+    const updatedPlans = await SportPlanModel.setFinishedSportPlan(userId, planId, isCompleted);
+    res.status(200).json(formatResponse('Success', null, updatedPlans));
+  } catch (error) {
+    console.error('Error setting sport plan completion status:', error);
+    res.status(500).json(formatResponse('Internal Server Error', error.message));
+  }
+
+}
+
+const updateElapsedTimeController = async (req, res) => {
+  const {  planId, elapsedTime } = req.body;
+  const userId = req.user.uid;
+
+  try {
+    await SportPlanModel.updateElapsedTime(userId, planId, elapsedTime);
+    res.status(200).json(formatResponse('Success'));
+  } catch (error) {
+    console.error('Error updating elapsed time:', error);
+    res.status(500).json(formatResponse('Internal Server Error', error.message));
+  }
+};
+
 module.exports = {
-  getRecommendationsController
+  getRecommendationsController,
+  setFinishedSportPlanController,
+  updateElapsedTimeController
 };
