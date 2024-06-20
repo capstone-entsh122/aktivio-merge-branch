@@ -12,7 +12,7 @@ const classify = async (req, res) => {
     form.append('image', req.file.buffer, req.file.originalname);
 
     try {
-        const response = await axios.post('http://localhost:5000/classify', form, {
+        const response = await axios.post('https://aktivio-classification-xvcqyzplqq-et.a.run.app/api/classify', form, {
             headers: {
                 ...form.getHeaders()
             }

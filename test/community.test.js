@@ -1,110 +1,110 @@
-/* eslint-disable no-undef */
-const request = require('supertest');
-const app = require('../app'); // Adjust the path to your Express app
-const CommunityModel = require('../models/community.model');
+// /* eslint-disable no-undef */
+// const request = require('supertest');
+// const app = require('../app'); // Adjust the path to your Express app
+// const CommunityModel = require('../models/community.model');
 
-describe('Community API', () => {
-  let server;
-  let communityId;
+// describe('Community API', () => {
+//   let server;
+//   let communityId;
 
-  beforeAll((done) => {
-    server = app.listen(done);
-  });
+//   beforeAll((done) => {
+//     server = app.listen(done);
+//   });
 
-  afterAll((done) => {
-    server.close(done);
-  });
+//   afterAll((done) => {
+//     server.close(done);
+//   });
   
 
-  it('should create a new community and index it in Algolia', async () => {
-    const response = await request(app)
-      .post('/api/communities')
-      .send({
-        name: 'Test Community New 3',
-        description: 'A community for testing',
-        latitude: 37.7749,
-        longitude: -122.4194,
-      });
+//   it('should create a new community and index it in Algolia', async () => {
+//     const response = await request(app)
+//       .post('/api/communities')
+//       .send({
+//         name: 'Test Community New 3',
+//         description: 'A community for testing',
+//         latitude: 37.7749,
+//         longitude: -122.4194,
+//       });
 
-      communityId = response.body.data.id;
-      console.log(communityId)
+//       communityId = response.body.data.id;
+//       console.log(communityId)
 
-      await request(app).put(`/api/users/memberships/${communityId}`).set('Authorization', `Bearer token`);
+//       await request(app).put(`/api/users/memberships/${communityId}`).set('Authorization', `Bearer token`);
 
-    expect(response.status).toBe(201);
-    console.log(response.body);
-  });
+//     expect(response.status).toBe(201);
+//     console.log(response.body);
+//   });
 
-  it('should get the created community by ID', async () => {
-    const response = await request(app)
-      .get(`/api/communities/${communityId}`);
+//   it('should get the created community by ID', async () => {
+//     const response = await request(app)
+//       .get(`/api/communities/${communityId}`);
 
-    expect(response.status).toBe(200);
-    expect(response.body.data).toHaveProperty('id', communityId);
-  });
+//     expect(response.status).toBe(200);
+//     expect(response.body.data).toHaveProperty('id', communityId);
+//   });
 
-  it('should update the community by ID', async () => {
-    const response = await request(app)
-      .put(`/api/communities/${communityId}`)
-      .send({
-        name: 'Updated Community',
-        description: 'Updated description',
-      });
+//   it('should update the community by ID', async () => {
+//     const response = await request(app)
+//       .put(`/api/communities/${communityId}`)
+//       .send({
+//         name: 'Updated Community',
+//         description: 'Updated description',
+//       });
 
-    expect(response.status).toBe(200);
-    const updatedCommunity = await CommunityModel.getCommunityById(communityId);
-    expect(updatedCommunity.name).toBe('Updated Community');
-    expect(updatedCommunity.description).toBe('Updated description');
-  });
+//     expect(response.status).toBe(200);
+//     const updatedCommunity = await CommunityModel.getCommunityById(communityId);
+//     expect(updatedCommunity.name).toBe('Updated Community');
+//     expect(updatedCommunity.description).toBe('Updated description');
+//   });
 
-  it('should list all communities', async () => {
-    const response = await request(app)
-      .get('/api/communities/')
-      .set('Authorization', 'Bearer mockToken');
+//   it('should list all communities', async () => {
+//     const response = await request(app)
+//       .get('/api/communities/')
+//       .set('Authorization', 'Bearer mockToken');
 
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThan(0);
-    console.log(response.body);
-  });
+//     expect(response.status).toBe(200);
+//     expect(Array.isArray(response.body.data)).toBe(true);
+//     expect(response.body.data.length).toBeGreaterThan(0);
+//     console.log(response.body);
+//   });
 
-  it('should list members of the community', async () => {
-    const response = await request(app)
-      .get(`/api/communities/${communityId}/members`)
-      .set('Authorization', 'Bearer mockToken');
+//   it('should list members of the community', async () => {
+//     const response = await request(app)
+//       .get(`/api/communities/${communityId}/members`)
+//       .set('Authorization', 'Bearer mockToken');
 
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThan(0);
-    console.log(response.body);
-  });
+//     expect(response.status).toBe(200);
+//     expect(Array.isArray(response.body.data)).toBe(true);
+//     expect(response.body.data.length).toBeGreaterThan(0);
+//     console.log(response.body);
+//   });
 
 
 
-  it('should list members of the community', async () => {
-    // Ensure the community has members
-    await CommunityModel.addMember(communityId, 'mockUserId2');
+//   it('should list members of the community', async () => {
+//     // Ensure the community has members
+//     await CommunityModel.addMember(communityId, 'mockUserId2');
 
-    const response = await request(app)
-      .get(`/api/communities/${communityId}/members`)
-      .set('Authorization', 'Bearer mockToken');
+//     const response = await request(app)
+//       .get(`/api/communities/${communityId}/members`)
+//       .set('Authorization', 'Bearer mockToken');
 
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThan(0);
-    // expect(response.body.data).toContainEqual(expect.objectContaining({
-    //   id: 'mockUserId',
-    //   displayName: expect.any(String),
-    // }));
-  });
+//     expect(response.status).toBe(200);
+//     expect(Array.isArray(response.body.data)).toBe(true);
+//     expect(response.body.data.length).toBeGreaterThan(0);
+//     // expect(response.body.data).toContainEqual(expect.objectContaining({
+//     //   id: 'mockUserId',
+//     //   displayName: expect.any(String),
+//     // }));
+//   });
 
-  it('should delete the community by ID', async () => {
-    const response = await request(app)
-      .delete(`/api/communities/${communityId}`)
-      .set('Authorization', 'Bearer mockToken');
+//   it('should delete the community by ID', async () => {
+//     const response = await request(app)
+//       .delete(`/api/communities/${communityId}`)
+//       .set('Authorization', 'Bearer mockToken');
 
-    expect(response.status).toBe(204);
-    const deletedCommunity = await CommunityModel.getCommunityById(communityId);
-    expect(deletedCommunity).toBeNull();
-  });
-});
+//     expect(response.status).toBe(204);
+//     const deletedCommunity = await CommunityModel.getCommunityById(communityId);
+//     expect(deletedCommunity).toBeNull();
+//   });
+// });

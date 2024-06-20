@@ -7,12 +7,30 @@ const { bucket } = require('../config/gcsClient.js');
 const uploadFile = require('../helpers/uploadFile.js');
 const path = require('path');
 const formatResponse = require('../helpers/responseFormatter.js');
-const {registerUser, loginUser, generateCustomToken} = require('../services/auth.service.js');
-
+const SportPlanModel = require('../models/sportplan.model');
 // const { v4: uuidv4 } = require('uuid');
 
+const admin = require('firebase-admin');
+const { getRecommendations } = require('../helpers/getRecommendation.js');
+const hitungSemuaNutrisi = require('../helpers/nutritionCalculator.js')
 
-const getRecommendations = require('../helpers/getRecommendation');
+
+
+
+const updateFcmTokenController = async (req, res) => {
+  const { token } = req.body;
+  const userId = req.user.uid;
+
+  try {
+    const userRef = firestore.collection('users').doc(userId);
+    await userRef.set({ fcmToken: token }, { merge: true });
+    res.status(200).json({ status: 'Success', message: 'Token updated successfully' });
+  } catch (error) {
+    console.error('Error updating token:', error);
+    res.status(500).json({ status: 'Error', message: 'Failed to update token' });
+  }
+};
+
 
 /**
  * @function userSignup
@@ -26,39 +44,21 @@ const getRecommendations = require('../helpers/getRecommendation');
  * @async
  */
 const userSignup = async (req, res) => {
-    const { email, password, displayName } = req.body;
+    
+    const { email, displayName } = req.body;
+    const userId = req.user.uid;
 
-    try {
-        // Create the user in Firebase Authentication
-        const userRecord = await registerUser(email, password);
-        const userId = userRecord.uid;
-
+      try {
         // Create the user in your database
         const user = await UserModel.createUser(userId, { email, displayName });
 
-        // Generate a custom token for the newly registered user
-        const token = await generateCustomToken(userId);
-
-        res.status(200).json(formatResponse('Success', null, { user, token }));
+        res.status(200).json(formatResponse('Success', null, user));
     } catch (error) {
         console.error('Error during user signup:', error);
         res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
 };
 
-const userLogin = async (req, res) => {
-    const { email, password } = req.body;
-
-  try {
-    const user = await loginUser(email, password);
-    const token = await generateCustomToken(user.uid);
-    res.status(200).json(formatResponse('Success', null, { user, token }));
-  } catch (error) {
-    console.error('Error during login:', error);
-    res.status(401).json(formatResponse('Unauthorized', error.message));
-  }
-
-}
 
 /**
  * @function getUserDetails
@@ -104,21 +104,46 @@ const updateUserDetails = async (req, res) => {
         const userId = req.user.uid;
         const updateData = req.body;
 
-        // await firestore.runTransaction(async (transaction) => {
-            const user = await UserModel.updateUserById(userId, updateData);
+        if (typeof updateData !== 'object' || updateData === null) {
+            return res.status(400).json(formatResponse('Invalid input data'));
+        }
 
-            // if (updateData.displayName) {
-            //     await PostModel.updateAuthorName(userId, updateData.displayName, transaction);
-            //     await EventModel.updateCreatorName(userId, updateData.displayName, transaction);
-            // }
-        // });
+        // Check if location object exists in updateData
+        if ('location' in updateData) {
+            const { location, ...restData } = updateData;
+        
+        if (typeof location !== 'object' || location === null || location.latitude == null || location.longitude == null) {
+            return res.status(400).json(formatResponse('Invalid location data'));
+            }
 
-        res.status(200).json(formatResponse('Success', null, user));
+        if (Object.keys(restData).length > 0) {
+            await UserModel.updateUserById(userId, restData);
+            }
+            // UpdateUserLocation
+            await UserModel.updateUserLocation(userId, location);
+        } else {
+            // Update user details without location
+            await UserModel.updateUserById(userId, updateData);
+        }
+
+            // // Update user details
+            // await UserModel.updateUserById(userId, restData);
+
+            // // Update location if latitude and longitude are provided
+            // if (location.latitude != null && location.longitude != null) {
+            //     await UserModel.updateUserLocation(userId, location);
+            // }        
+
+        // Fetch the updated user data
+        const updatedUser = await UserModel.getUserById(userId);
+
+        res.status(200).json(formatResponse('Success', null, updatedUser));
     } catch (error) {
         console.error('Error updating user details:', error);
         res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
 };
+
 
 
 /**
@@ -194,18 +219,65 @@ const deleteUserAccount = async (req, res) => {
  */
 const updateUserPreference = async (req, res) => {
     const userId = req.user.uid;
-    const {gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory } = req.body;
+    const { gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory, height, weight } = req.body;
+    
+    // Validate request body data
+  if (!userId) {
+    return res.status(400).json(formatResponse('Bad Request', 'User ID is missing'));
+  }
+
+    // Validate request body data
+  const requiredFields = [
+    'gender', 'age', 'equipment', 'motivation',
+    'availableTime', 'fitnessLevel', 'placePreference',
+    'socialPreference', 'diseaseHistory', 'height', 'weight'
+  ];
+
+  for (let field of requiredFields) {
+    if (typeof req.body[field] === 'undefined') {
+      return res.status(400).json(formatResponse('Bad Request', `Missing required field: ${field}`));
+    }
+  }
+
+  if (!Array.isArray(diseaseHistory)) {
+    return res.status(400).json(formatResponse('Bad Request', 'diseaseHistory should be an array'));
+  }
 
     try {
-        const user = await UserModel.updateUserPreference(userId, {gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory });
-        const recommendations = await getRecommendations({ gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory });
-        res.status(200).json(formatResponse('Success', null, user));
-    } catch (error) {
-        console.error('Error updating preference:', error);
-        res.status(500).json(formatResponse('Internal Server Error', error.message));
-    }
-    };
+      const preferences = { gender, age, equipment, motivation, availableTime, fitnessLevel, placePreference, socialPreference, diseaseHistory };
+      
+    // Log preferences data for debugging
+    console.log('Preferences:', preferences);
+      
+      const recommendations = await getRecommendations(preferences);
+      
+      // Log recommendations data for debugging
+    console.log('Recommendations:', recommendations);
 
+      const recommendedCaloriesNutritions = hitungSemuaNutrisi(gender, weight, height, age, fitnessLevel);
+      // Log recommended calories and nutrition data for debugging
+    console.log('Recommended Calories and Nutritions:', recommendedCaloriesNutritions);
+
+      const updateData = await UserModel.updateUserPreference(userId, preferences, recommendations, recommendedCaloriesNutritions);
+      
+      res.status(200).json(formatResponse('Success', null, updateData));
+    } catch (error) {
+      console.error('Error updating preference:', error);
+      res.status(500).json(formatResponse('Internal Server Error', error.message));
+    }
+  };
+
+
+const createSportPlanController = async (req, res) => {
+    try {
+      const sportPlanData = req.body;
+      const response = await SportPlanModel.createSportPlan(sportPlanData);
+      res.status(201).json(response);
+    } catch (error) {
+      console.error('Error creating sport plan:', error);
+      res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+  };
 /**
  * @function getProfilePhoto
  * @description This function retrieves the profile photo URL of the authenticated user. It extracts the user ID from the request, fetches the user data from the database, generates a signed URL for the profile photo, and sends a JSON response with the photo URL or an error message.
@@ -390,27 +462,10 @@ const listJoinedCommunities = async (req, res) => {
     }
 };
 
-const saveLocation = async (req, res) => {
-    try {
-      const userId = req.user.uid;
-      const { latitude, longitude } = req.body;
-  
-      if (latitude == null || longitude == null) {
-        return res.status(400).json(formatResponse('Bad Request: Missing latitude or longitude'));
-      }
-  
-      const user = await UserModel.saveLocation(userId, { latitude, longitude });
-      res.status(200).json(formatResponse('Location saved successfully', null, user));
-    } catch (error) {
-      res.status(500).json(formatResponse('Internal Server Error', error.message));
-    }
-  };
-
-
 
 module.exports = { 
+  updateFcmTokenController,
     userSignup,
-    userLogin,
      getUserDetails,
       updateUserDetails,
        deleteUserAccount,
@@ -420,4 +475,5 @@ module.exports = {
            joinCommunity,
             leaveCommunity,
              listJoinedCommunities,
-            saveLocation};
+             createSportPlan: createSportPlanController, 
+           };

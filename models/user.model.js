@@ -15,6 +15,10 @@ class UserModel {
    * @async
    */
   static async createUser(userId, userData) {
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('Invalid userId');
+  }
+
     const userRef = firestore.collection('users').doc(userId);
     await userRef.set({
       ...userData,
@@ -28,6 +32,8 @@ class UserModel {
     const userDoc = await userRef.get();
     return { id: userDoc.id, ...userDoc.data() };
   }
+
+
   /**
    * @function getUserById
    * @description Retrieves a user by their ID from Firestore.
@@ -51,14 +57,22 @@ class UserModel {
    */
   static async updateUserById(userId, updateData, transaction = null) {
     const userRef = firestore.collection('users').doc(userId);
+
+    // Create a new object without fields that have null values
+    const filteredUpdateData = Object.fromEntries(
+        Object.entries(updateData)
+            .filter(([, value]) => value !== null)
+    );
+
     if (transaction) {
-        await transaction.update(userRef, updateData);
+        await transaction.update(userRef, filteredUpdateData);
     } else {
-        await userRef.update(updateData);
+        await userRef.update(filteredUpdateData);
     }
+
     const userDoc = await userRef.get();
     return { id: userDoc.id, ...userDoc.data() };
-}
+  }
 
   /**
    * @function deleteUserById
@@ -80,18 +94,35 @@ class UserModel {
    * @function updateUserPreference
    * @description Updates the preferences of a user in Firestore.
    * @param {string} userId - The ID of the user whose preferences are to be updated.
-   * @param {Object} preference - The preference data to update.
+   * @param {Object} preferences - The preference data to update.
    * @returns {Promise<void>}
    * @async
    */
-  static async updateUserPreference(userId, preference) {
-    const userRef = firestore.collection('users').doc(userId);
-    await userRef.update({
-      preferences: preference
-    });
-    const userDoc = await userRef.get();
-    return { id: userDoc.id, ...userDoc.data() };
+  static async updateUserPreference(userId, preferences, recommendations, recommendedCaloriesNutritions) {
+    try {
+      const userRef = firestore.collection('users').doc(userId);
+      const updateData = {
+        preferences,
+        sportPlan: recommendations,
+        recommendedCaloriesNutritions
+      };
+      await userRef.set(updateData, { merge: true });
+      return updateData;
+    } catch (error) {
+      throw new Error(`Error updating user preferences: ${error.message}`);
+    }
   }
+
+
+  // static async createSportPlan(sportPlanData) {
+  //   try {
+  //     const sportPlanRef = await firestore.collection('sportPlans').add(sportPlanData);
+  //     return { id: sportPlanRef.id, ...sportPlanData };
+  //   } catch (error) {
+  //     throw new Error(`Error creating sport plan: ${error.message}`);
+  //   }
+  // }
+
   
 
   /**
@@ -155,7 +186,7 @@ static async leaveCommunity(userId, communityId, transaction = null) {
     return [];
   }
 
-  static async saveLocation(userId, { latitude, longitude }) {
+  static async updateUserLocation(userId, { latitude, longitude }) {
     const userRef = firestore.collection('users').doc(userId);
     await userRef.update({ location: new GeoPoint(latitude, longitude) });
     const userDoc = await userRef.get();

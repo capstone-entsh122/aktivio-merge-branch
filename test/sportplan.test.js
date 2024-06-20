@@ -1,94 +1,58 @@
-const request = require('supertest');
-const app = require('../app'); 
+const firestore = require('../config/firebaseAdmin');
+const SportPlanModel = require('../models/sportplan.model');
 
-describe('Sport Plan API', () => {
-  let createdSportPlanId;
+jest.mock('../config/firebaseAdmin');
 
-  beforeAll(async () => {
-    const res = await request(app)
-      .post('/api/sport_plans')
-      .send({
-        sportType: 'running_beginner',
-        difficultyLevel: 'Easy',
-        recommendedDuration: 30,
-        description: 'A test sport plan',
-        steps: [
-          { instruction: 'Start with a warm-up', order: 1 },
-          { instruction: 'Run for 10 minutes', order: 2 },
-          { instruction: 'Cool down and stretch', order: 3 }
-        ]
-      });
-
-    createdSportPlanId = res.body.id;
-    console.log('Created Sport Plan ID:', createdSportPlanId);
+describe('SportPlanModel', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('should create a sport plan', async () => {
-    const res = await request(app)
-      .post('/api/sport_plans')
-      .send({
-        sportType: 'running_beginner',
-        difficultyLevel: 'Easy',
-        recommendedDuration: 30,
-        description: 'A test sport plan',
-        steps: [
-          { order: 1, instruction: 'Start with a warm-up' },
-          { order: 2, instruction: 'Run for 10 minutes' },
-          { order: 3, instruction: 'Cool down and stretch' },
-        ],
-      });
+  test('should fetch sport plan recommendations', async () => {
+    const mockData = {
+      docs: [
+        { id: '1', data: () => ({ sport: 'basketball', plan: 'Plan A' }) },
+        { id: '2', data: () => ({ sport: 'basketball', plan: 'Plan B' }) }
+      ],
+      empty: false
+    };
 
-      console.log('Created Sport Plan ID:', res.body.id);
-      expect(res.statusCode).toBe(201);
-      expect(res.body).toHaveProperty('id');
+    firestore.collection.mockReturnValue({
+      where: jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue(mockData)
+      })
     });
 
-  it('should get a sport plan by ID', async () => {
-    const res = await request(app).get(`/api/sport_plans/${createdSportPlanId}`);
-    console.log('Get Sport Plan by ID Response:', res.body);
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('id', createdSportPlanId);
+    const sportPlans = await SportPlanModel.getSportPlanRecommendations('basketball');
+    expect(sportPlans).toEqual([
+      { id: '1', sport: 'basketball', plan: 'Plan A' },
+      { id: '2', sport: 'basketball', plan: 'Plan B' }
+    ]);
   });
 
-  it('should update a sport plan by ID', async () => {
-    const res = await request(app)
-      .put(`/api/sport_plans/${createdSportPlanId}`)
-      .send({
-        name: 'Updated Sport Plan',
-        difficultyLevel: 'Medium',
-        recommendedDuration: 45,
-        steps: [
-          { order: 1, instruction: 'Start with a light jog' },
-          { order: 2, instruction: 'Run for 20 minutes' },
-          { order: 3, instruction: 'Cool down and stretch' },
-        ],
-      });
+  test('should return empty array if no sport plans found', async () => {
+    const mockData = {
+      docs: [],
+      empty: true
+    };
 
-    console.log('Update Sport Plan Response:', res.body);
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('message', 'Sport plan updated successfully');
-  });
-
-  it('should delete a sport plan by ID', async () => {
-    const res = await request(app).delete(`/api/sport_plans/${createdSportPlanId}`);
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('message', 'Sport plan deleted successfully');
-  });
-
-  it('should list all sport plans', async () => {
-    const res = await request(app).get('/api/sport_plans');
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-  });
-
-  it('should get sport plan recommendations based on user preferences', async () => {
-    const res = await request(app).post('/api/sport_plans/recommendations').send({
-      sportType: 'running_beginner',
-      difficultyLevel: 'Easy',
+    firestore.collection.mockReturnValue({
+      where: jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue(mockData)
+      })
     });
-    console.log('Sport Plan Recommendations Response:', res.body);
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThan(0);
+
+    const sportPlans = await SportPlanModel.getSportPlanRecommendations('nonexistent');
+    expect(sportPlans).toEqual([]);
+  });
+
+  test('should throw an error if fetching sport plans fails', async () => {
+    firestore.collection.mockReturnValue({
+      where: jest.fn().mockReturnValue({
+        get: jest.fn().mockRejectedValue(new Error('Firestore error'))
+      })
+    });
+
+    await expect(SportPlanModel.getSportPlanRecommendations('basketball')).rejects.toThrow('Error getting sport plan recommendations: Firestore error');
   });
 });

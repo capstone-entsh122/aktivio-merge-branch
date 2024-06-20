@@ -27,8 +27,11 @@ const searchCommunities = async (req, res) => {
         res.status(200).json(formatResponse('No communities found within the search radius'));
       }
     } catch (error) {
-      console.error('Error searching communities:', error);
-      res.status(500).json(formatResponse('Internal Server Error', error.message));
+      if (error.message.includes('Cannot read properties of undefined')) {
+        res.status(500).json(formatResponse('Unexpected search result format'));
+      } else {
+        res.status(500).json(formatResponse('Internal Server Error', error.message));
+      }
     }
   };
 

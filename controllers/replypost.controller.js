@@ -1,4 +1,5 @@
 // controllers/replypost.controller.js
+const formatResponse = require('../helpers/responseFormatter');
 const ReplyPostModel = require('../models/replyPostModel');
 
 class ReplyPostController {
@@ -6,9 +7,9 @@ class ReplyPostController {
   async createReplyPost(req, res) {
     try {
       const replyPosts = await ReplyPostModel.replyPost(req.body);
-      res.status(201).send(replyPosts);
+      res.status(201).json(formatResponse('Reply post created successfully', null, replyPosts));
     } catch (error) {
-      res.status(500).send({ error: 'Failed to create reply post' });
+      res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
   }
 
@@ -17,11 +18,11 @@ class ReplyPostController {
     try {
       const replyPosts = await ReplyPostModel.getReplyPostById(req.params.id);
       if (!replyPosts) {
-        return res.status(404).send({ error: 'Reply post not found' });
+        return res.status(404).send(formatResponse('Reply post not found'));
       }
-      res.status(200).send(replyPosts);
+      res.status(200).json(formatResponse('Success', null, replyPosts));
     } catch (error) {
-      res.status(500).send({ error: 'Failed to get reply post' });
+      res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
   }
 
@@ -29,9 +30,9 @@ class ReplyPostController {
   async updateReplyPostById(req, res) {
     try {
       await ReplyPostModel.updateReplyPostById(req.params.id, req.body);
-      res.status(200).send({ message: 'Reply post updated successfully' });
+      res.status(200).json(formatResponse('Reply post updated successfully'));
     } catch (error) {
-      res.status(500).send({ error: 'Failed to update reply post' });
+      res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
   }
 
@@ -39,9 +40,9 @@ class ReplyPostController {
   async deleteReplyPostById(req, res) {
     try {
       await ReplyPostModel.deleteReplyPostById(req.params.id);
-      res.status(200).send({ message: 'Reply post deleted successfully' });
+      res.status(200).json(formatResponse('Reply post deleted successfully'));
     } catch (error) {
-      res.status(500).send({ error: 'Failed to delete reply post' });
+      res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
   }
 
@@ -49,9 +50,9 @@ class ReplyPostController {
   async listReplyPostsByPost(req, res) {
     try {
       const replyPosts = await ReplyPostModel.listReplyPostsByPost(req.params.postId);
-      res.status(200).send(replyPosts);
+      res.status(200).json(formatResponse('Success', null, replyPosts));
     } catch (error) {
-      res.status(500).send({ error: 'Failed to list reply posts' });
+      res.status(500).json(formatResponse('Internal Server Error', error.message));
     }
   }
 }
