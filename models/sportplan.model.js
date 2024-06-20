@@ -44,22 +44,43 @@ class SportPlanModel {
     }
   }
 
-  static async updateElapsedTime(userId, planId, elapsedTime) {
+  static async updateElapsedTime(userId, planId, stepOrder, elapsedTime) {
     try {
       const userRef = firestore.collection('users').doc(userId);
       const userDoc = await userRef.get();
       const plans = userDoc.get('sportPlan.plans');
-
+  
+      let updatedPlan = null;
+  
       const updatedPlans = plans.map(plan => {
         if (plan.id === planId) {
-          return { ...plan, elapsedTime: elapsedTime };
+          // Update elapsed time for the specific step
+          const updatedSteps = plan.steps.map(step => {
+            if (step.order === stepOrder) {
+              return { ...step, elapsedTime: elapsedTime };
+            }
+            return step;
+          });
+  
+          // Calculate total elapsed time
+          const totalElapsedTime = updatedSteps.reduce((sum, step) => sum + (step.elapsedTime || 0), 0);
+  
+          updatedPlan = { 
+            ...plan, 
+            steps: updatedSteps,
+            totalElapsedTime: totalElapsedTime
+          };
+  
+          return updatedPlan;
         }
         return plan;
       });
-
+  
       await userRef.update({
         'sportPlan.plans': updatedPlans
       });
+  
+      return updatedPlan;
     } catch (error) {
       throw new Error(`Error updating elapsed time: ${error.message}`);
     }

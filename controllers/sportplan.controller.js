@@ -34,12 +34,21 @@ const setFinishedSportPlanController = async (req, res) => {
 }
 
 const updateElapsedTimeController = async (req, res) => {
-  const {  planId, elapsedTime } = req.body;
+  const { planId, stepOrder, elapsedTime } = req.body;
   const userId = req.user.uid;
 
+  if (!planId || stepOrder === undefined || elapsedTime === undefined) {
+    return res.status(400).json(formatResponse('Bad Request', 'Missing planId, stepOrder, or elapsedTime'));
+  }
+
   try {
-    await SportPlanModel.updateElapsedTime(userId, planId, elapsedTime);
-    res.status(200).json(formatResponse('Success'));
+    const updatedPlan = await SportPlanModel.updateElapsedTime(userId, planId, stepOrder, elapsedTime);
+    
+    if (!updatedPlan) {
+      return res.status(404).json(formatResponse('Not Found', 'Plan not found'));
+    }
+
+    res.status(200).json(formatResponse('Success', null, { updatedPlan }));
   } catch (error) {
     console.error('Error updating elapsed time:', error);
     res.status(500).json(formatResponse('Internal Server Error', error.message));
