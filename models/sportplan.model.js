@@ -85,6 +85,22 @@ class SportPlanModel {
       throw new Error(`Error updating elapsed time: ${error.message}`);
     }
   }
+
+  static async getUserSportPlan(userId) {
+    try {
+      const userRef = firestore.collection('users').doc(userId);
+      const doc = await userRef.get();
+
+      if (!doc.exists) {
+        throw new Error('User not found');
+      }
+
+      const userData = doc.data();
+      return userData.sportPlan || {};
+    } catch (error) {
+      throw new Error(`Error fetching user sport plan: ${error.message}`);
+    }
+  }
 }
 
 module.exports = SportPlanModel;

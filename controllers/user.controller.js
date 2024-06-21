@@ -475,6 +475,8 @@ const getMealHistory = async (req, res) => {
 };
 
 
+
+
 module.exports = { 
   updateFcmTokenController,
     userSignup,
@@ -488,5 +490,5 @@ module.exports = {
             leaveCommunity,
              listJoinedCommunities,
              createSportPlan: createSportPlanController,
-              getMealHistory 
+              getMealHistory
            };

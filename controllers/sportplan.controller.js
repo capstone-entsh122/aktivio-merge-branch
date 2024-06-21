@@ -2,6 +2,7 @@ const { getRecommendations } = require('../helpers/getRecommendation');
 const { firestore } = require('../config/firebaseAdmin');
 const formatResponse = require('../helpers/responseFormatter.js');
 const SportPlanModel = require('../models/sportplan.model.js');
+const UserModel = require('../models/user.model.js');
 
 const getRecommendationsController = async (req, res) => {
   const { preferences, userId } = req.body;
@@ -55,8 +56,20 @@ const updateElapsedTimeController = async (req, res) => {
   }
 };
 
+const getUserSportPlan = async (req, res) => {
+  try {
+    const userId = req.user.uid; // Assuming you have authentication middleware that adds user info to req
+    const sportPlan = await UserModel.getUserSportPlan(userId);
+    res.json(formatResponse('Success', null, sportPlan));
+  } catch (error) {
+    console.error('Error in getUserSportPlan:', error);
+    res.status(500).json(formatResponse('Error', error.message));
+  }
+};
+
 module.exports = {
   getRecommendationsController,
   setFinishedSportPlanController,
-  updateElapsedTimeController
+  updateElapsedTimeController,
+  getUserSportPlan
 };
