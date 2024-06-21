@@ -9,13 +9,7 @@ const {admin }= require('../config/firebaseAdmin.js');
  */
 
  
-const authenticate = async (req, res, next) => {
-    if (process.env.NODE_ENV === 'test') {
-        // Skip authentication during tests and assign a mock user ID
-        req.user = { uid: 'test-uid' };
-        return next();
-      }
-      
+const authenticate = async (req, res, next) => {     
     // Extract the token from the Authorization header
     const idToken = req.headers.authorization && req.headers.authorization.split(' ')[1];
     if (!idToken) {
