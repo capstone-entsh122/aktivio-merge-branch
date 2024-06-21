@@ -21,7 +21,7 @@ async function getRecommendations(preferences) {
       sportsRecommendations: recommendedSports,
       timeRecommendations: response.data.timeRecommendations,
       weeklyRecommendations: response.data.weeklyRecommendations,
-      plans: sportPlans
+      plans: null
     };
   } catch (error) {
     console.error('Error getting recommendations from external API:', error.message);
