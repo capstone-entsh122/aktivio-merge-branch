@@ -2,7 +2,7 @@
 const admin = require('firebase-admin');
 // const serviceAccountPath = path.resolve(__dirname, 'serviceAccount.json');
 // const serviceAccount = require(serviceAccountPath);
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString());
 
 
 admin.initializeApp({
